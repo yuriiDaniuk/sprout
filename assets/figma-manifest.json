@@ -1,0 +1,107 @@
+[
+  {
+    "path": "assets/icons/tree-palm.svg",
+    "sourceNode": "2:4",
+    "sourceVariable": "imgTreePalm"
+  },
+  {
+    "path": "assets/images/task-monstera.png",
+    "sourceNode": "9:4",
+    "sourceVariable": "imgPlantThumbnail"
+  },
+  {
+    "path": "assets/images/monstera.png",
+    "sourceNode": "9:4",
+    "sourceVariable": "imgPlantPhoto"
+  },
+  {
+    "path": "assets/images/snake-plant.png",
+    "sourceNode": "9:4",
+    "sourceVariable": "imgPlantPhoto1"
+  },
+  {
+    "path": "assets/images/fiddle-leaf.png",
+    "sourceNode": "9:4",
+    "sourceVariable": "imgPlantPhoto2"
+  },
+  {
+    "path": "assets/images/pothos.png",
+    "sourceNode": "9:4",
+    "sourceVariable": "imgPlantPhoto3"
+  },
+  {
+    "path": "assets/icons/droplet-task.svg",
+    "sourceNode": "9:4",
+    "sourceVariable": "imgDroplet"
+  },
+  {
+    "path": "assets/icons/check.svg",
+    "sourceNode": "9:4",
+    "sourceVariable": "imgCheck"
+  },
+  {
+    "path": "assets/icons/droplet-card.svg",
+    "sourceNode": "9:4",
+    "sourceVariable": "imgDroplet1"
+  },
+  {
+    "path": "assets/icons/add-background.svg",
+    "sourceNode": "9:4",
+    "sourceVariable": "imgEllipse1"
+  },
+  {
+    "path": "assets/icons/home-active.svg",
+    "sourceNode": "9:4",
+    "sourceVariable": "imgHome"
+  },
+  {
+    "path": "assets/icons/profile-inactive.svg",
+    "sourceNode": "9:4",
+    "sourceVariable": "imgUser"
+  },
+  {
+    "path": "assets/images/avatar.png",
+    "sourceNode": "16:339",
+    "sourceVariable": "imgAvatarImage"
+  },
+  {
+    "path": "assets/icons/chevron-left.svg",
+    "sourceNode": "16:339",
+    "sourceVariable": "imgChevronLeft"
+  },
+  {
+    "path": "assets/icons/edit-profile.svg",
+    "sourceNode": "16:339",
+    "sourceVariable": "imgUser"
+  },
+  {
+    "path": "assets/icons/chevron-right.svg",
+    "sourceNode": "16:339",
+    "sourceVariable": "imgChevronRight"
+  },
+  {
+    "path": "assets/icons/settings-line.svg",
+    "sourceNode": "16:339",
+    "sourceVariable": "imgLine"
+  },
+  {
+    "path": "assets/icons/lock.svg",
+    "sourceNode": "16:339",
+    "sourceVariable": "imgLock"
+  },
+  {
+    "path": "assets/icons/home-inactive.svg",
+    "sourceNode": "16:339",
+    "sourceVariable": "imgHome"
+  },
+  {
+    "path": "assets/icons/profile-active.svg",
+    "sourceNode": "16:339",
+    "sourceVariable": "imgUser1"
+  },
+  {
+    "path": "assets/images/avatar-cropped.png",
+    "sourceNode": "16:358",
+    "sourceVariable": "export"
+  }
+]
