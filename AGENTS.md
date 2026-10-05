@@ -15,7 +15,7 @@ When writing complex features or significant refactors, use an ExecPlan (as desc
 - Static analysis: `flutter analyze`, using `flutter_lints`.
 - iOS tooling: Xcode and the iOS Simulator.
 - Design source: Figma file `tA5zaOIT7BGhdWOdU7VaTa`; access is connected.
-- Version control: Git, with a new GitHub repository planned; repository details are pending.
+- Version control: Git; public repository https://github.com/yuriiDaniuk/sprout, default branch `main`.
 - Planned backend for later laboratory work: Supabase Auth, Database, and Storage. Supabase is not connected in the current project.
 
 For laboratory work No. 3, implement UI, navigation, and demonstration state locally without backend integration. Use Navigator/CupertinoPageRoute and StatefulWidget/setState; do not add routing or state-management packages. Follow the accepted scope and progress in LAB3_PLAN.md. Ask the user about missing design or product requirements rather than inventing them.

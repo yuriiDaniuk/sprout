@@ -2,6 +2,8 @@
 
 Flutter UI demonstration for laboratory No. 3, targeting iOS 15.0+. The app implements Log In, Sign Up, Forgot Password, Home, Profile and Change Password in English.
 
+Repository: [yuriiDaniuk/sprout](https://github.com/yuriiDaniuk/sprout). The default branch is `main`.
+
 ## Run
 
 From this project directory, with Flutter and Xcode installed:
@@ -45,4 +47,4 @@ flutter test
 
 Latest result: no analyzer issues; 13 tests passed. Tests cover routes, password visibility, signup values/defaults, messages, task/tab retention, logout, touch/mouse scrolling, and narrow 320×568 layouts with keyboard insets.
 
-See [screenshot index](artifacts/screenshots/README.md) for both devices and keyboard evidence. [LAB3_PLAN.md](LAB3_PLAN.md) is the maintained ExecPlan; [PLANS.md](PLANS.md) defines its format. Git/GitHub setup and the final lab report are separate pending work.
+See [screenshot index](artifacts/screenshots/README.md) for both devices and keyboard evidence. [LAB3_PLAN.md](LAB3_PLAN.md) is the maintained ExecPlan; [PLANS.md](PLANS.md) defines its format. The final lab report is pending.
