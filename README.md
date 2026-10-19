@@ -1,50 +1,73 @@
 # Sprout
 
-Flutter UI demonstration for laboratory No. 3, targeting iOS 15.0+. The app implements Log In, Sign Up, Forgot Password, Home, Profile and Change Password in English.
+Plant care assistant built with Flutter for iOS 15.0+. Laboratory No. 4 adds Firebase Authentication, Analytics and Crashlytics to the interface from No. 3. The interface uses bundled Manrope, Figma SVGs, Navigator/CupertinoPageRoute and StatefulWidget/setState.
 
-Repository: [yuriiDaniuk/sprout](https://github.com/yuriiDaniuk/sprout). The default branch is `main`.
+Public repository: https://github.com/yuriiDaniuk/sprout, branch `main`.
 
 ## Run
 
-From this project directory, with Flutter and Xcode installed:
+Install Flutter, Xcode and FlutterFire CLI. The generated Crashlytics build phase uses the FlutterFire executable from the Pub cache.
 
 ```sh
 flutter pub get
-flutter run
+dart pub global activate flutterfire_cli
+flutter devices
+flutter run -d <your-iOS-simulator-id>
 ```
 
-Select an available iOS Simulator. Devices used for verification:
+On this machine iPhone 17 Pro is `9FD8F88B-BC61-4A91-A25E-17FD7892CE7D`. An iOS 15 runtime was not available; device verification uses iOS 26.5.
+
+## Firebase
+
+Project: `sprout-a6523`. iOS bundle ID: `com.example.sprout`. FlutterFire configuration is in `lib/firebase_options.dart`, `firebase.json`, and `ios/Runner/GoogleService-Info.plist`. These are client configuration files, not administrator credentials. Never add service-account keys, passwords, refresh tokens or reset links to the repository.
+
+If configuring a different project, install the official Firebase CLI (`npm install -g firebase-tools`), sign in with `firebase login`, and run:
 
 ```sh
-flutter run -d 9FD8F88B-BC61-4A91-A25E-17FD7892CE7D
-flutter run -d 25CAE2C0-164D-499B-950F-4019B3F9814A
+flutterfire configure --project=<your-project-id> --platforms=ios --ios-bundle-id=com.example.sprout
 ```
 
-These are the local iPhone 17 Pro and iPhone 17e device identifiers; other machines should use `flutter devices` for their own IDs. Both were inspected on iOS 26.5. Deployment target is 15.0; an iOS 15 runtime was not available for testing.
+Email/Password must be enabled. Password enforcement is Require with a minimum length of 8 and an uppercase character. Other complexity requirements are not enabled. Auth uses the same policy locally when creating a new password. Reset emails open the standard Firebase browser page.
 
-## Demo behavior
+Authentication restores the SDK-managed session. Signup requires a name, valid email and compliant password. Profile editing saves a display name and photo URL. Current-password reauthentication precedes a password change. Sign Out clears the authenticated navigation stack. Failed requests show user-facing errors; in-flight requests block repeated submissions. No email verification gate or social login is required by the accepted scope.
 
-Log In accepts any input and uses the Figma demonstration profile. Sign Up uses the entered name/email, trimming whitespace and applying defaults separately for empty values. Passwords are confined to form controllers.
+The eight profile avatars are user-selected SHAREit characters extracted from a supplied screenshot, with user-approved PNG publication in commit `5d4edfc2da3409a50ae610e600095021d68af82b`. Their HTTPS URLs are stored in Firebase; bundled copies are a fallback. See `assets/avatars/README.md` for provenance.
 
-The Monstera task starts unfinished; tapping its circle toggles completion and the 1/0 watering count. Home/Profile share that state. Logging out discards the session; next login starts fresh. All data is in memory and disappears on restart.
+Plant data and watering remain local demonstrations. They reset with a new session or restart. Plant cards and Add Plant show the later-lab message. No plant database, media uploads or push notifications are included in No. 4.
 
-Password reset/save display the approved demo messages and perform no account or email operation. Plant cards, plus and Edit Profile display the later-lab message. No validation, real authentication, Supabase or persistence is implemented.
+## Architecture
 
-## Structure
+`lib/main.dart` initializes Firebase and error reporting, then launches `SproutApp`. `AuthScope` provides an injectable `AuthRepository` and `AnalyticsService`. `AuthGate` selects the signed-out or authenticated navigation stack by user identity. It also handles completing a restored profile without a name.
 
-`lib/main.dart` launches `SproutApp` in `lib/app.dart`. Shared theme/widgets live in `lib/core`; screens are grouped under `lib/features/auth`, `home`, and `profile`. `lib/features/session` owns local session identity and task state. Navigation uses Navigator/CupertinoPageRoute; state uses StatefulWidget/setState.
+`FirebaseAuthRepository` is the only class that talks to Firebase Auth. It listens to Firebase user changes and publishes immutable `AppUser` values. Profile changes preserve the same user's task/tab state; a changed uid resets the session. Screens keep only form state and invoke repository methods. Tests inject a local fake repository, without network credentials.
 
-Manrope, photos and SVGs are bundled under `assets`. Provenance and the avatar crop/shadow details are in [assets/README.md](assets/README.md). The app makes no runtime network calls.
+`SessionScreen` listens directly to the repository and passes its current user to both Home and Profile. Saving a name updates the greeting immediately; Home displays the first word of the name.
 
-Forms resize and scroll with the keyboard. Home preserves photo/card geometry and scrolls when native safe areas leave less room than the Figma mockup. System status bar and bottom indicator are managed by iOS.
+`lib/core/widgets` contains shared fields, buttons, headers and avatar display; `lib/core/theme` contains visual styles. Authentication forms live in `lib/features/auth`, profile forms in `lib/features/profile`, and the authenticated shell in `lib/features/session`.
 
-## Checks and screenshots
+## Analytics and Crashlytics
+
+Analytics records successful login/signup and explicit screen views. Page views are tracked on entry and return using RouteObserver/RouteAware. Home/Profile views are also tracked when tabs change, because they use IndexedStack rather than pushed routes. Passwords, email addresses and names are not event parameters.
+
+Crashlytics captures framework and uncaught asynchronous errors. The generated Xcode build phase uploads symbols. A development-only controlled non-fatal error can be sent with:
+
+```sh
+flutter run -d <your-iOS-simulator-id> --dart-define=CRASHLYTICS_TEST=true
+```
+
+Use a normal run after this check to avoid repeating the intentional error. The test hook is disabled in release builds. Confirm the issue in the Firebase console; local logging alone does not prove delivery.
+
+Debug builds generate dSYM symbols, including Runner.debug.dylib. If the console reports missing symbols for a simulator build, upload the matching `build/ios/Debug-iphonesimulator/Runner.app.dSYM` using the Firebase SDK's `Crashlytics/upload-symbols` script. The controlled non-fatal report was verified with readable Dart source locations; evidence is saved in `artifacts/lab4/crashlytics-readable-stack.png`.
+
+## Validation
 
 ```sh
 flutter analyze
 flutter test
 ```
 
-Latest result: no analyzer issues; 13 tests passed. Tests cover routes, password visibility, signup values/defaults, messages, task/tab retention, logout, touch/mouse scrolling, and narrow 320×568 layouts with keyboard insets.
+Widget tests cover validation, request errors/loading, session routing, profile drafts, avatars, password changes, keyboard layouts and the retained local plant interactions. Profile and password forms block back navigation while saving. Repository unit tests verify partial registration recovery and preserve errors for attempts with another email. Real authentication, reset email delivery, session restoration, Analytics and Crashlytics require the configured Firebase project and a simulator/device. Verification progress and remaining manual checks are recorded in `LAB4_PLAN.md`. `LAB3_PLAN.md` preserves the completed UI-stage history.
 
-See [screenshot index](artifacts/screenshots/README.md) for both devices and keyboard evidence. [LAB3_PLAN.md](LAB3_PLAN.md) is the maintained ExecPlan; [PLANS.md](PLANS.md) defines its format. The final lab report is pending.
+On 2026-10-19, analysis passed with no issues and all 30 tests passed. Real registration, password change, reset email, session restoration, profile updates, Analytics DebugView and the controlled Crashlytics report were confirmed. Real device network disconnection has not been manually verified; repository error handling and retries are covered by automated tests.
+
+The No. 4 report is outside the current implementation scope.

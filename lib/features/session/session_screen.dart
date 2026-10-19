@@ -3,35 +3,60 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/sprout_theme.dart';
 import '../../core/widgets/sprout_icon.dart';
-import '../auth/login_screen.dart';
+import '../auth/auth_scope.dart';
+import '../auth/auth_action.dart';
+import '../profile/edit_profile_screen.dart';
 import '../home/home_screen.dart';
 import '../profile/change_password_screen.dart';
 import '../profile/profile_screen.dart';
-import 'demo_user.dart';
+import 'app_user.dart';
 
 class SessionScreen extends StatefulWidget {
-  const SessionScreen({super.key, required this.user});
-
-  final DemoUser user;
+  const SessionScreen({super.key});
 
   @override
   State<SessionScreen> createState() => _SessionScreenState();
 }
 
-class _SessionScreenState extends State<SessionScreen> {
+class _SessionScreenState extends State<SessionScreen>
+    with AuthAction<SessionScreen> {
   int _tab = 0;
   bool _watered = false;
 
-  void _logout() {
+  @override
+  String get analyticsScreen => _tab == 0 ? 'home' : 'profile';
+  Future<void> _logout() async {
     ScaffoldMessenger.of(context).removeCurrentSnackBar();
-    Navigator.of(context).pushAndRemoveUntil(
-      CupertinoPageRoute<void>(builder: (_) => const LoginScreen()),
-      (_) => false,
-    );
+    final repository = AuthScope.of(context).repository;
+    if (!await runAction(repository.signOut) &&
+        mounted &&
+        actionError != null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(actionError!)));
+    }
+  }
+
+  void _select(int tab) {
+    if (_tab == tab) return;
+    ScaffoldMessenger.of(context).removeCurrentSnackBar();
+    setState(() => _tab = tab);
+    AuthScope.of(context).analytics.screen(tab == 0 ? 'home' : 'profile');
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) {
+    final repository = AuthScope.of(context).repository;
+    return ListenableBuilder(
+      listenable: repository,
+      builder: (context, _) {
+        final user = repository.currentUser;
+        if (user == null) return const SizedBox.shrink();
+        return _buildSession(context, user);
+      },
+    );
+  }
+
+  Widget _buildSession(BuildContext context, AppUser user) => Scaffold(
     backgroundColor: _tab == 0 ? SproutColors.home : Colors.white,
     body: SafeArea(
       bottom: false,
@@ -39,30 +64,32 @@ class _SessionScreenState extends State<SessionScreen> {
         index: _tab,
         children: [
           HomeScreen(
-            user: widget.user,
+            user: user,
             watered: _watered,
             onToggleWatering: () => setState(() => _watered = !_watered),
           ),
           ProfileScreen(
-            user: widget.user,
-            onHome: () => setState(() => _tab = 0),
-            onLogout: _logout,
-            onChangePassword: () => Navigator.of(context).push(
+            user: user,
+            onHome: () => _select(0),
+            loggingOut: busy,
+            onEditProfile: () => Navigator.of(context).push(
               CupertinoPageRoute<void>(
-                builder: (_) => const ChangePasswordScreen(),
+                builder: (_) => const EditProfileScreen(),
               ),
             ),
+            onLogout: _logout,
+            onChangePassword: () {
+              Navigator.of(context).push(
+                CupertinoPageRoute<void>(
+                  builder: (_) => const ChangePasswordScreen(),
+                ),
+              );
+            },
           ),
         ],
       ),
     ),
-    bottomNavigationBar: _SproutTabs(
-      selected: _tab,
-      onSelected: (tab) {
-        ScaffoldMessenger.of(context).removeCurrentSnackBar();
-        setState(() => _tab = tab);
-      },
-    ),
+    bottomNavigationBar: _SproutTabs(selected: _tab, onSelected: _select),
   );
 }
 

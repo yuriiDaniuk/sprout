@@ -3,10 +3,19 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 
 import 'core/theme/sprout_theme.dart';
-import 'features/auth/login_screen.dart';
+import 'features/auth/auth_gate.dart';
+import 'features/auth/auth_scope.dart';
+import 'features/auth/data/auth_repository.dart';
+import 'core/services/analytics_service.dart';
 
 class SproutApp extends StatelessWidget {
-  const SproutApp({super.key});
+  const SproutApp({
+    super.key,
+    required this.auth,
+    this.analytics = const AnalyticsService(),
+  });
+  final AuthRepository auth;
+  final AnalyticsService analytics;
 
   @override
   Widget build(BuildContext context) => AnnotatedRegion<SystemUiOverlayStyle>(
@@ -24,7 +33,11 @@ class SproutApp extends StatelessWidget {
         },
       ),
       theme: SproutTheme.light,
-      home: const LoginScreen(),
+      home: AuthScope(
+        repository: auth,
+        analytics: analytics,
+        child: const AuthGate(),
+      ),
     ),
   );
 }

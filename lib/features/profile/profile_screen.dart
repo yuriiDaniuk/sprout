@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/sprout_theme.dart';
-import '../../core/widgets/demo_message.dart';
 import '../../core/widgets/page_header.dart';
 import '../../core/widgets/sprout_button.dart';
 import '../../core/widgets/sprout_icon.dart';
-import '../session/demo_user.dart';
+import '../session/app_user.dart';
+import '../../core/widgets/user_avatar.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({
@@ -14,12 +14,16 @@ class ProfileScreen extends StatelessWidget {
     required this.onHome,
     required this.onLogout,
     required this.onChangePassword,
+    required this.onEditProfile,
+    this.loggingOut = false,
   });
 
-  final DemoUser user;
+  final AppUser user;
   final VoidCallback onHome;
   final VoidCallback onLogout;
   final VoidCallback onChangePassword;
+  final VoidCallback onEditProfile;
+  final bool loggingOut;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -43,15 +47,7 @@ class ProfileScreen extends StatelessWidget {
                         width: 2,
                       ),
                     ),
-                    child: ClipOval(
-                      child: Image.asset(
-                        'assets/images/avatar-cropped.png',
-                        width: 92,
-                        height: 92,
-                        fit: BoxFit.cover,
-                        semanticLabel: 'Profile photo',
-                      ),
-                    ),
+                    child: UserAvatar(url: user.photoUrl, size: 92),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -81,8 +77,7 @@ class ProfileScreen extends StatelessWidget {
                         _SettingsRow(
                           title: 'Edit Profile',
                           icon: 'edit-profile',
-                          onPressed: () =>
-                              showDemoMessage(context, laterLabMessage),
+                          onPressed: onEditProfile,
                         ),
                         const _SettingsLine(),
                         _SettingsRow(
@@ -97,6 +92,7 @@ class ProfileScreen extends StatelessWidget {
                   const SizedBox(height: 28),
                   SproutButton(
                     label: 'Log Out',
+                    loading: loggingOut,
                     onPressed: onLogout,
                     destructive: true,
                   ),

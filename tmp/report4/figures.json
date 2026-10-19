@@ -1,0 +1,54 @@
+[
+  [
+    1,
+    [
+      "analytics-debugview.png"
+    ],
+    "Firebase Analytics DebugView та збільшений фрагмент подій"
+  ],
+  [
+    2,
+    [
+      "crashlytics-readable-stack.png"
+    ],
+    "Firebase Crashlytics та збільшений фрагмент контрольної помилки"
+  ],
+  [
+    3,
+    [
+      "auth-providers-report.png"
+    ],
+    "Email/Password для Sprout та збільшений фрагмент статусу Enabled"
+  ],
+  [
+    4,
+    [
+      "profile-saved.png",
+      "home-updated-name.png"
+    ],
+    "Профіль користувача та Home після оновлення імені"
+  ],
+  [
+    5,
+    [
+      "edit-profile-final.png",
+      "avatar-picker-final.png"
+    ],
+    "Edit Profile та панель вибору аватарів"
+  ],
+  [
+    6,
+    [
+      "forgot-password-report.png"
+    ],
+    "Екран відновлення пароля через електронну пошту"
+  ],
+  [
+    7,
+    [
+      "signup-validation-report.png",
+      "login-network-error-report.png"
+    ],
+    "Локальна валідація реєстрації та повідомлення про помилку мережі"
+  ]
+]

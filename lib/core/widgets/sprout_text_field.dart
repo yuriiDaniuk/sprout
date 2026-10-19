@@ -13,6 +13,9 @@ class SproutTextField extends StatefulWidget {
     this.textInputAction = TextInputAction.next,
     this.onSubmitted,
     this.autofillHints,
+    this.validator,
+    this.enabled = true,
+    this.readOnly = false,
   });
 
   final String label;
@@ -22,6 +25,9 @@ class SproutTextField extends StatefulWidget {
   final TextInputAction textInputAction;
   final ValueChanged<String>? onSubmitted;
   final Iterable<String>? autofillHints;
+  final FormFieldValidator<String>? validator;
+  final bool enabled;
+  final bool readOnly;
 
   @override
   State<SproutTextField> createState() => _SproutTextFieldState();
@@ -31,12 +37,16 @@ class _SproutTextFieldState extends State<SproutTextField> {
   bool _visible = false;
 
   @override
-  Widget build(BuildContext context) => TextField(
+  Widget build(BuildContext context) => TextFormField(
+    validator: widget.validator,
+    enabled: widget.enabled,
+    readOnly: widget.readOnly,
+    autovalidateMode: AutovalidateMode.onUserInteraction,
     controller: widget.controller,
     obscureText: widget.password && !_visible,
     keyboardType: widget.keyboardType,
     textInputAction: widget.textInputAction,
-    onSubmitted: widget.onSubmitted,
+    onFieldSubmitted: widget.onSubmitted,
     autofillHints: widget.autofillHints,
     autocorrect:
         !widget.password && widget.keyboardType != TextInputType.emailAddress,
@@ -47,6 +57,7 @@ class _SproutTextFieldState extends State<SproutTextField> {
     style: sproutText(15),
     scrollPadding: const EdgeInsets.all(24),
     decoration: InputDecoration(
+      errorMaxLines: 3,
       hintText: widget.label,
       hintStyle: sproutText(15, color: SproutColors.muted),
       filled: true,
@@ -57,6 +68,18 @@ class _SproutTextFieldState extends State<SproutTextField> {
         borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(color: SproutColors.border),
       ),
+      disabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: SproutColors.border),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Color(0xFFB3261E)),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Color(0xFFB3261E), width: 2),
+      ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(color: SproutColors.green),
@@ -64,7 +87,9 @@ class _SproutTextFieldState extends State<SproutTextField> {
       suffixIcon: widget.password
           ? IconButton(
               tooltip: '${_visible ? 'Hide' : 'Show'} ${widget.label}',
-              onPressed: () => setState(() => _visible = !_visible),
+              onPressed: widget.enabled
+                  ? () => setState(() => _visible = !_visible)
+                  : null,
               icon: Icon(
                 _visible ? CupertinoIcons.eye_slash : CupertinoIcons.eye,
                 size: 20,

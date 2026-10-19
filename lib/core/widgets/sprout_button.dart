@@ -8,11 +8,13 @@ class SproutButton extends StatelessWidget {
     required this.label,
     required this.onPressed,
     this.destructive = false,
+    this.loading = false,
   });
 
   final String label;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final bool destructive;
+  final bool loading;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -32,7 +34,7 @@ class SproutButton extends StatelessWidget {
       width: double.infinity,
       height: 56,
       child: TextButton(
-        onPressed: onPressed,
+        onPressed: loading ? null : onPressed,
         style: TextButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           backgroundColor: destructive
@@ -47,7 +49,16 @@ class SproutButton extends StatelessWidget {
           ),
           textStyle: sproutText(16, weight: FontWeight.w600),
         ),
-        child: Text(label),
+        child: loading
+            ? SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: destructive ? SproutColors.green : Colors.white,
+                ),
+              )
+            : Text(label),
       ),
     ),
   );

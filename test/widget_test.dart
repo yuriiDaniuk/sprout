@@ -1,183 +1,377 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sprout/app.dart';
-import 'package:sprout/core/widgets/demo_message.dart';
 import 'package:sprout/features/auth/login_screen.dart';
+import 'package:sprout/features/auth/auth_scope.dart';
+import 'package:sprout/core/services/analytics_service.dart';
+import 'package:sprout/features/session/session_screen.dart';
+import 'package:sprout/features/auth/validation/auth_validators.dart';
+import 'package:sprout/features/session/app_user.dart';
 
-Future<void> start(
-  WidgetTester tester, {
-  Size size = const Size(402, 874),
-}) async {
-  tester.view.devicePixelRatio = 1;
-  tester.view.physicalSize = size;
-  tester.view.padding = const FakeViewPadding(top: 62, bottom: 34);
-  addTearDown(tester.view.reset);
-  await tester.pumpWidget(const SproutApp());
-  await tester.pumpAndSettle();
-}
+import 'support/fake_auth_repository.dart';
 
+Finder field(String label) => find.byWidgetPredicate(
+  (w) => w is TextField && w.decoration?.hintText == label,
+);
 Future<void> tap(WidgetTester tester, Finder finder) async {
   await tester.ensureVisible(finder);
   await tester.tap(finder);
   await tester.pumpAndSettle();
 }
 
-Finder field(String label) => find.byWidgetPredicate(
-  (widget) => widget is TextField && widget.decoration?.hintText == label,
-);
+Future<void> start(
+  WidgetTester tester,
+  FakeAuthRepository auth, {
+  Size size = const Size(402, 874),
+}) async {
+  tester.view.devicePixelRatio = 1;
+  tester.view.physicalSize = size;
+  tester.view.padding = const FakeViewPadding(top: 62, bottom: 34);
+  addTearDown(tester.view.reset);
+  addTearDown(auth.dispose);
+  await tester.pumpWidget(SproutApp(auth: auth));
+  await tester.pumpAndSettle();
+}
 
-Future<void> login(WidgetTester tester) async =>
-    tap(tester, find.text('Log In'));
+Future<void> login(WidgetTester tester) async {
+  await tester.enterText(field('Email'), 'person@example.com');
+  await tester.enterText(field('Password'), 'Password1');
+  await tap(tester, find.text('Log In'));
+}
 
-Future<void> signupPage(WidgetTester tester) async =>
+Future<void> signup(WidgetTester tester) =>
     tap(tester, find.text("Don't have an account? Sign up"));
+Future<void> profile(WidgetTester tester) =>
+    tap(tester, find.byKey(const ValueKey('tab-profile')));
 
 void main() {
-  testWidgets('Home responds to touch and mouse drag to reveal bottom cards', (
+  testWidgets('Session observes profile changes without recreating its route', (
     tester,
   ) async {
-    await start(tester);
-    await login(tester);
-    final card = find.byKey(const ValueKey('plant-pothos'));
-    final originalTop = tester.getTopLeft(card).dy;
-    await tester.dragFrom(const Offset(200, 600), const Offset(0, -180));
-    await tester.pumpAndSettle();
-    expect(tester.getTopLeft(card).dy, lessThan(originalTop));
-    await tester.dragFrom(const Offset(200, 400), const Offset(0, 180));
-    await tester.pumpAndSettle();
-    final resetTop = tester.getTopLeft(card).dy;
-    await tester.dragFrom(
-      const Offset(200, 600),
-      const Offset(0, -180),
-      kind: PointerDeviceKind.mouse,
+    final auth = FakeAuthRepository();
+    auth.user = auth.testUser;
+    addTearDown(auth.dispose);
+    tester.view.physicalSize = const Size(402, 874);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      AuthScope(
+        repository: auth,
+        analytics: AnalyticsService(),
+        child: const MaterialApp(home: SessionScreen()),
+      ),
     );
     await tester.pumpAndSettle();
-    expect(tester.getTopLeft(card).dy, lessThan(resetTop));
-  });
-
-  testWidgets('Login accepts demo input and replaces authentication routes', (
-    tester,
-  ) async {
-    await start(tester);
-    expect(find.text('Sprout'), findsOneWidget);
-    await tester.enterText(field('Email'), 'not-a-real-email');
-    await tester.enterText(field('Password'), 'demo-input');
-    await login(tester);
-    expect(find.text('Hi, Yurii'), findsOneWidget);
-    expect(find.text('You have 1 plant to water today'), findsOneWidget);
-    expect(find.byType(LoginScreen), findsNothing);
-    expect(
-      Navigator.of(tester.element(find.text('Hi, Yurii'))).canPop(),
-      isFalse,
-    );
-    await tap(tester, find.byKey(const ValueKey('tab-profile')));
-    expect(find.text('Yurii Daniuk'), findsOneWidget);
-    expect(find.text('danukura2007@gmail.com'), findsOneWidget);
-  });
-
-  testWidgets('Login and signup passwords can be revealed and hidden', (
-    tester,
-  ) async {
-    await start(tester);
-    for (var screen = 0; screen < 2; screen++) {
-      await tester.enterText(field('Password'), 'demo-secret');
-      expect(tester.widget<TextField>(field('Password')).obscureText, isTrue);
-      await tap(tester, find.byTooltip('Show Password'));
-      expect(tester.widget<TextField>(field('Password')).obscureText, isFalse);
+    await tap(tester, find.byKey(const ValueKey('watering-toggle')));
+    await profile(tester);
+    for (final name in ['Alex Green', 'Olena Green']) {
+      await tap(tester, find.text('Edit Profile'));
+      await tester.enterText(field('Name'), name);
+      await tap(tester, find.text('Save Changes'));
+      expect(find.text(name), findsOneWidget);
       expect(
-        tester.widget<TextField>(field('Password')).controller!.text,
-        'demo-secret',
+        find.text('Hi, ${name.split(' ').first}', skipOffstage: false),
+        findsOneWidget,
       );
-      await tap(tester, find.byTooltip('Hide Password'));
-      expect(tester.widget<TextField>(field('Password')).obscureText, isTrue);
-      if (screen == 0) await signupPage(tester);
     }
+    await tap(tester, find.byKey(const ValueKey('tab-home')));
+    expect(find.text('Hi, Olena'), findsOneWidget);
+    expect(find.text('You have 0 plants to water today'), findsOneWidget);
   });
 
-  testWidgets('Signup passes trimmed name/email to Home and Profile', (
+  test('Validation follows only the accepted password policy', () {
+    expect(AuthValidators.name('  '), isNotNull);
+    expect(AuthValidators.email('bad'), isNotNull);
+    expect(AuthValidators.email(' person@example.com '), isNull);
+    expect(AuthValidators.newPassword('Abcdefg'), isNotNull);
+    expect(AuthValidators.newPassword('abcdefgh'), isNotNull);
+    expect(AuthValidators.newPassword('ABCDEFGH'), isNull);
+    expect(AuthValidators.newPassword('Abcdefgh'), isNull);
+    expect(AuthValidators.requiredPassword('short'), isNull);
+  });
+
+  testWidgets('Empty login validates without sending a request', (
     tester,
   ) async {
-    await start(tester);
-    await signupPage(tester);
-    await tester.enterText(field('Name'), '  Alex Green  ');
-    await tester.enterText(field('Email'), '  alex@example.com  ');
-    await tester.enterText(field('Password'), 'demo-only');
-    await tap(tester, find.text('Sign Up'));
-    expect(find.text('Hi, Alex'), findsOneWidget);
-    await tap(tester, find.byKey(const ValueKey('tab-profile')));
-    expect(find.text('Alex Green'), findsOneWidget);
-    expect(find.text('alex@example.com'), findsOneWidget);
-    expect(find.text('demo-only'), findsNothing);
+    final auth = FakeAuthRepository();
+    await start(tester, auth);
+    await tap(tester, find.text('Log In'));
+    expect(auth.calls, 0);
+    expect(find.text('Enter your email.'), findsOneWidget);
+    expect(find.text('Enter your password.'), findsOneWidget);
   });
-
-  for (final values in [
-    ('', '', 'Yurii Daniuk', 'danukura2007@gmail.com'),
-    ('Alex Green', ' ', 'Alex Green', 'danukura2007@gmail.com'),
-    (' ', 'alex@example.com', 'Yurii Daniuk', 'alex@example.com'),
-  ]) {
-    testWidgets(
-      'Signup fallback is independent for name/email: ${values.$1}/${values.$2}',
-      (tester) async {
-        await start(tester);
-        await signupPage(tester);
-        await tester.enterText(field('Name'), values.$1);
-        await tester.enterText(field('Email'), values.$2);
-        await tap(tester, find.text('Sign Up'));
-        await tap(tester, find.byKey(const ValueKey('tab-profile')));
-        expect(find.text(values.$3), findsOneWidget);
-        expect(find.text(values.$4), findsOneWidget);
-      },
-    );
-  }
 
   testWidgets(
-    'Reset form is reachable from both auth screens and returns to Login',
+    'Successful login replaces forms; logout removes the session stack',
     (tester) async {
-      await start(tester);
-      await tap(tester, find.text('Forgot password?'));
-      expect(find.text('Forgot Password'), findsOneWidget);
+      final auth = FakeAuthRepository();
+      await start(tester, auth);
+      await signup(tester);
+      await tester.enterText(field('Name'), 'Alex');
       await tester.enterText(field('Email'), 'alex@example.com');
-      await tap(tester, find.text('Send Reset Link'));
-      expect(find.text('Demo mode: reset email was not sent.'), findsOneWidget);
-      await tap(tester, find.text('Back to Log In'));
+      await tester.enterText(field('Password'), 'Password1');
+      await tap(tester, find.text('Sign Up'));
+      expect(find.text('Hi, Alex'), findsOneWidget);
+      expect(find.text('Sign Up'), findsNothing);
+      await profile(tester);
+      await tap(tester, find.text('Log Out'));
       expect(find.byType(LoginScreen), findsOneWidget);
-      await signupPage(tester);
+      expect(find.text('Alex'), findsNothing);
+      await login(tester);
+      expect(find.text('Hi, Yurii'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Signup requires name and strong password; passes trimmed values',
+    (tester) async {
+      final auth = FakeAuthRepository();
+      await start(tester, auth);
+      await signup(tester);
+      await tester.enterText(field('Email'), 'alex@example.com');
+      await tester.enterText(field('Password'), 'abcdefgh');
+      await tap(tester, find.text('Sign Up'));
+      expect(auth.calls, 0);
+      expect(find.text('Enter your name.'), findsOneWidget);
+      expect(
+        find.text('Include at least one uppercase letter (A–Z).'),
+        findsOneWidget,
+      );
+      await tester.enterText(field('Name'), '  Alex Green  ');
+      await tester.enterText(field('Password'), 'Abcdefgh');
+      await tap(tester, find.text('Sign Up'));
+      await profile(tester);
+      expect(find.text('Alex Green'), findsOneWidget);
+      expect(find.text('alex@example.com'), findsOneWidget);
+    },
+  );
+
+  testWidgets('Server errors stay on login and allow retry', (tester) async {
+    final auth = FakeAuthRepository()
+      ..failNext = 'Check your internet connection and try again.';
+    await start(tester, auth);
+    await login(tester);
+    expect(
+      find.text('Check your internet connection and try again.'),
+      findsOneWidget,
+    );
+    expect(find.byType(LoginScreen), findsOneWidget);
+    await tap(tester, find.text('Log In'));
+    expect(find.text('Hi, Yurii'), findsOneWidget);
+  });
+
+  testWidgets('Loading blocks duplicate button and keyboard submissions', (
+    tester,
+  ) async {
+    final auth = FakeAuthRepository()..delay = Completer<void>();
+    await start(tester, auth);
+    await tester.enterText(field('Email'), 'person@example.com');
+    await tester.enterText(field('Password'), 'Password1');
+    await tester.tap(find.text('Log In'));
+    await tester.pump();
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    tester.widget<TextField>(field('Password')).onSubmitted?.call('Password1');
+    await tester.pump();
+    expect(auth.calls, 1);
+    expect(tester.widget<TextField>(field('Email')).enabled, isFalse);
+    auth.delay!.complete();
+    await tester.pumpAndSettle();
+    expect(find.text('Hi, Yurii'), findsOneWidget);
+  });
+
+  testWidgets(
+    'Password visibility preserves input on both authentication forms',
+    (tester) async {
+      await start(tester, FakeAuthRepository());
+      for (var i = 0; i < 2; i++) {
+        await tester.enterText(field('Password'), 'Password1');
+        expect(tester.widget<TextField>(field('Password')).obscureText, isTrue);
+        await tap(tester, find.byTooltip('Show Password'));
+        expect(
+          tester.widget<TextField>(field('Password')).obscureText,
+          isFalse,
+        );
+        expect(
+          tester.widget<TextField>(field('Password')).controller!.text,
+          'Password1',
+        );
+        await tap(tester, find.byTooltip('Hide Password'));
+        if (i == 0) await signup(tester);
+      }
+    },
+  );
+
+  testWidgets(
+    'Reset validates, calls repository and returns to login from signup',
+    (tester) async {
+      final auth = FakeAuthRepository();
+      await start(tester, auth);
+      await signup(tester);
       await tap(tester, find.text('Forgot password?'));
+      await tap(tester, find.text('Send Reset Link'));
+      expect(auth.resets, 0);
+      await tester.enterText(field('Email'), 'person@example.com');
+      await tap(tester, find.text('Send Reset Link'));
+      expect(auth.resets, 1);
+      expect(
+        find.text(
+          'If an account exists for this email, a password reset link has been sent.',
+        ),
+        findsOneWidget,
+      );
       await tap(tester, find.text('Back to Log In'));
       expect(find.byType(LoginScreen), findsOneWidget);
       expect(find.text('Sign Up'), findsNothing);
     },
   );
 
+  testWidgets('Restored user opens Home without a login action', (
+    tester,
+  ) async {
+    final auth = FakeAuthRepository();
+    auth.publish(auth.testUser);
+    await start(tester, auth);
+    expect(find.text('Hi, Yurii'), findsOneWidget);
+    expect(auth.calls, 0);
+  });
+
+  testWidgets('Watering state survives tabs and same-user profile updates', (
+    tester,
+  ) async {
+    final auth = FakeAuthRepository();
+    await start(tester, auth);
+    await login(tester);
+    await tap(tester, find.byKey(const ValueKey('watering-toggle')));
+    await profile(tester);
+    auth.publish(
+      const AppUser(
+        uid: 'test-user',
+        name: 'New Name',
+        email: 'person@example.com',
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tap(tester, find.byTooltip('Back to Home'));
+    expect(find.text('Hi, New'), findsOneWidget);
+    expect(find.text('You have 0 plants to water today'), findsOneWidget);
+    await tap(tester, find.byKey(const ValueKey('watering-toggle')));
+    expect(find.text('You have 1 plant to water today'), findsOneWidget);
+  });
+
   testWidgets(
-    'Watering is reversible and retained through tabs and profile back',
+    'New identity resets local task and removes an open profile form',
     (tester) async {
-      await start(tester);
+      final auth = FakeAuthRepository();
+      await start(tester, auth);
       await login(tester);
       await tap(tester, find.byKey(const ValueKey('watering-toggle')));
-      expect(find.text('You have 0 plants to water today'), findsOneWidget);
-      expect(find.text('Watered today'), findsOneWidget);
-      await tap(tester, find.byKey(const ValueKey('tab-profile')));
-      await tap(tester, find.byKey(const ValueKey('tab-home')));
-      expect(find.text('You have 0 plants to water today'), findsOneWidget);
-      await tap(tester, find.byKey(const ValueKey('tab-profile')));
-      await tap(tester, find.byTooltip('Back to Home'));
-      expect(find.text('You have 0 plants to water today'), findsOneWidget);
-      await tap(tester, find.byKey(const ValueKey('watering-toggle')));
+      await profile(tester);
+      await tap(tester, find.text('Change Password'));
+      auth.publish(
+        const AppUser(
+          uid: 'different',
+          name: 'Other',
+          email: 'other@example.com',
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Hi, Other'), findsOneWidget);
+      expect(field('Current Password'), findsNothing);
       expect(find.text('You have 1 plant to water today'), findsOneWidget);
-      expect(find.text('Needs watering today'), findsOneWidget);
+    },
+  );
+
+  testWidgets('Edit profile cancels draft, saves changes, preserves email', (
+    tester,
+  ) async {
+    final auth = FakeAuthRepository();
+    await start(tester, auth);
+    await login(tester);
+    await profile(tester);
+    await tap(tester, find.text('Edit Profile'));
+    await tester.enterText(field('Name'), 'Cancelled');
+    expect(tester.widget<TextField>(field('Email')).readOnly, isTrue);
+    await tap(tester, find.byTooltip('Back'));
+    expect(find.text('Yurii Daniuk'), findsOneWidget);
+    await tap(tester, find.text('Edit Profile'));
+    await tester.enterText(field('Name'), '  Alex Green  ');
+    await tap(tester, find.text('Save Changes'));
+    expect(find.text('Alex Green'), findsOneWidget);
+    expect(auth.currentUser!.email, 'danukura2007@gmail.com');
+    await tap(tester, find.byKey(const ValueKey('tab-home')));
+    expect(find.text('Hi, Alex'), findsOneWidget);
+  });
+
+  testWidgets('Profile save failure keeps the draft and can be retried', (
+    tester,
+  ) async {
+    final auth = FakeAuthRepository();
+    await start(tester, auth);
+    await login(tester);
+    await profile(tester);
+    await tap(tester, find.text('Edit Profile'));
+    await tester.enterText(field('Name'), 'Alex');
+    auth.failNext = 'Unable to save. Try again.';
+    await tap(tester, find.text('Save Changes'));
+    expect(find.text('Unable to save. Try again.'), findsOneWidget);
+    expect(tester.widget<TextField>(field('Name')).controller!.text, 'Alex');
+    await tap(tester, find.text('Save Changes'));
+    expect(find.text('Alex'), findsOneWidget);
+  });
+
+  testWidgets(
+    'Password change validates confirmation and handles reauthentication errors',
+    (tester) async {
+      final auth = FakeAuthRepository();
+      await start(tester, auth);
+      await login(tester);
+      await profile(tester);
+      await tap(tester, find.text('Change Password'));
+      await tester.enterText(field('Current Password'), 'OldPassword1');
+      await tester.enterText(field('New Password'), 'NewPassword1');
+      await tester.enterText(field('Confirm New Password'), 'different');
+      await tap(tester, find.text('Save Password'));
+      expect(auth.passwordChanges, 0);
+      expect(find.text('Passwords do not match.'), findsOneWidget);
+      await tester.enterText(field('Confirm New Password'), 'NewPassword1');
+      auth.failNext = 'Please log out and log in again, then retry.';
+      await tap(tester, find.text('Save Password'));
+      expect(
+        find.text('Please log out and log in again, then retry.'),
+        findsOneWidget,
+      );
+      for (final label in [
+        'Current Password',
+        'New Password',
+        'Confirm New Password',
+      ]) {
+        await tap(tester, find.byTooltip('Show $label'));
+        expect(tester.widget<TextField>(field(label)).obscureText, isFalse);
+        await tap(tester, find.byTooltip('Hide $label'));
+      }
+      await tap(tester, find.text('Save Password'));
+      expect(auth.passwordChanges, 1);
+      expect(find.text('Your password has been changed.'), findsOneWidget);
+      expect(
+        tester.widget<TextField>(field('New Password')).controller!.text,
+        isEmpty,
+      );
     },
   );
 
   testWidgets(
-    'Plus, all plant cards and Edit Profile explain the later feature',
+    'Plant placeholders and the user-adjusted plus remain functional',
     (tester) async {
-      await start(tester);
+      await start(tester, FakeAuthRepository());
       await login(tester);
-      final addPlantButton = find.byKey(const ValueKey('add-plant'));
-      expect(tester.getSize(addPlantButton), const Size(44, 44));
-      expect(tester.getCenter(find.text('+')), tester.getCenter(addPlantButton));
+      final add = find.byKey(const ValueKey('add-plant'));
+      expect(tester.getSize(add), const Size(44, 44));
+      expect(
+        tester.getRect(add).contains(tester.getCenter(find.text('+'))),
+        isTrue,
+      );
       for (final key in [
         'add-plant',
         'plant-monstera',
@@ -186,107 +380,80 @@ void main() {
         'plant-pothos',
       ]) {
         await tap(tester, find.byKey(ValueKey(key)));
-        expect(find.text(laterLabMessage), findsOneWidget);
+        expect(
+          find.text('This feature will be available in a later lab.'),
+          findsOneWidget,
+        );
       }
-      await tap(tester, find.byKey(const ValueKey('tab-profile')));
-      await tap(tester, find.text('Edit Profile'));
-      expect(find.text(laterLabMessage), findsOneWidget);
     },
   );
 
-  testWidgets(
-    'Change Password reveals independently and save stays on the form',
-    (tester) async {
-      await start(tester);
-      await login(tester);
-      await tap(tester, find.byKey(const ValueKey('tab-profile')));
-      await tap(tester, find.text('Change Password'));
-      final labels = [
-        'Current Password',
-        'New Password',
-        'Confirm New Password',
-      ];
-      for (final label in labels) {
-        await tester.enterText(field(label), 'demo-input');
-        expect(tester.widget<TextField>(field(label)).obscureText, isTrue);
-      }
-      for (final label in labels) {
-        await tap(tester, find.byTooltip('Show $label'));
-        expect(tester.widget<TextField>(field(label)).obscureText, isFalse);
-        for (final other in labels.where((item) => item != label)) {
-          expect(tester.widget<TextField>(field(other)).obscureText, isTrue);
-        }
-        await tap(tester, find.byTooltip('Hide $label'));
-      }
-      await tap(tester, find.text('Save Password'));
-      expect(find.text('Demo mode: password was not changed.'), findsOneWidget);
-      expect(field('Current Password'), findsOneWidget);
-      await tap(tester, find.byTooltip('Back to Profile'));
-      expect(find.text('Yurii Daniuk'), findsOneWidget);
-    },
-  );
+  testWidgets('Avatar is a draft until Save Changes, and cancel discards it', (
+    tester,
+  ) async {
+    final auth = FakeAuthRepository();
+    await start(tester, auth);
+    await login(tester);
+    await profile(tester);
+    await tap(tester, find.text('Edit Profile'));
+    await tap(tester, find.text('Change Photo'));
+    expect(find.text('Choose Avatar'), findsOneWidget);
+    await tap(tester, find.byKey(const ValueKey('avatar-2')));
+    expect(auth.currentUser!.photoUrl, isNull);
+    await tap(tester, find.byTooltip('Back'));
+    expect(auth.currentUser!.photoUrl, isNull);
+    await tap(tester, find.text('Edit Profile'));
+    await tap(tester, find.text('Change Photo'));
+    await tap(tester, find.byKey(const ValueKey('avatar-2')));
+    await tap(tester, find.text('Save Changes'));
+    expect(auth.currentUser!.photoUrl, endsWith('/shareit-carrot.png'));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Home scroll reveals lower cards', (tester) async {
+    await start(tester, FakeAuthRepository());
+    await login(tester);
+    final card = find.byKey(const ValueKey('plant-pothos'));
+    final before = tester.getTopLeft(card).dy;
+    await tester.dragFrom(const Offset(200, 600), const Offset(0, -180));
+    await tester.pumpAndSettle();
+    expect(tester.getTopLeft(card).dy, lessThan(before));
+  });
+
+  testWidgets('Incomplete restored profile requires completion before Home', (
+    tester,
+  ) async {
+    final auth = FakeAuthRepository(
+      user: const AppUser(
+        uid: 'incomplete',
+        name: '',
+        email: 'person@example.com',
+      ),
+    );
+    await start(tester, auth);
+    expect(find.text('Complete Your Profile'), findsOneWidget);
+    await tester.enterText(field('Name'), 'Finished');
+    await tap(tester, find.text('Save Changes'));
+    expect(find.text('Hi, Finished'), findsOneWidget);
+  });
 
   testWidgets(
-    'Logout discards custom identity and task; fresh login resets them',
+    'Forms and actions remain reachable on a narrow screen with keyboard',
     (tester) async {
-      await start(tester);
-      await signupPage(tester);
-      await tester.enterText(field('Name'), 'Alex Green');
-      await tester.enterText(field('Email'), 'alex@example.com');
+      final auth = FakeAuthRepository();
+      await start(tester, auth, size: const Size(320, 568));
+      tester.view.viewInsets = const FakeViewPadding(bottom: 240);
+      await tester.pumpAndSettle();
+      await signup(tester);
       await tap(tester, find.text('Sign Up'));
-      await tap(tester, find.byKey(const ValueKey('watering-toggle')));
-      await tap(tester, find.byKey(const ValueKey('tab-profile')));
-      await tap(tester, find.text('Log Out'));
-      expect(find.byType(LoginScreen), findsOneWidget);
-      expect(field('Email'), findsOneWidget);
-      expect(
-        tester.widget<TextField>(field('Email')).controller!.text,
-        isEmpty,
-      );
-      expect(
-        Navigator.of(tester.element(find.text('Sprout'))).canPop(),
-        isFalse,
-      );
-      await login(tester);
-      expect(find.text('Hi, Yurii'), findsOneWidget);
-      expect(find.text('You have 1 plant to water today'), findsOneWidget);
-    },
-  );
-
-  testWidgets(
-    'All screens fit a narrow viewport; forms remain reachable with keyboard',
-    (tester) async {
-      await start(tester, size: const Size(320, 568));
-      tester.view.viewInsets = const FakeViewPadding(bottom: 280);
-      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      await tester.enterText(field('Name'), 'Alex');
       await tester.enterText(field('Email'), 'alex@example.com');
-      await tester.ensureVisible(find.text('Log In'));
-      expect(tester.takeException(), isNull);
-      tester.view.viewInsets = const FakeViewPadding();
-      await tester.pumpAndSettle();
-      await signupPage(tester);
-      tester.view.viewInsets = const FakeViewPadding(bottom: 280);
-      await tester.pumpAndSettle();
-      await tester.ensureVisible(field('Password'));
-      await tester.ensureVisible(find.text('Sign Up'));
-      expect(tester.takeException(), isNull);
-      tester.view.viewInsets = const FakeViewPadding();
-      await tester.pumpAndSettle();
-      await tap(tester, find.text('Forgot password?'));
-      tester.view.viewInsets = const FakeViewPadding(bottom: 280);
-      await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Send Reset Link'));
-      expect(tester.takeException(), isNull);
-      tester.view.viewInsets = const FakeViewPadding();
-      await tester.pumpAndSettle();
-      await tap(tester, find.text('Back to Log In'));
-      await login(tester);
-      await tester.ensureVisible(find.byKey(const ValueKey('plant-pothos')));
-      await tap(tester, find.byKey(const ValueKey('tab-profile')));
-      await tap(tester, find.text('Change Password'));
-      tester.view.viewInsets = const FakeViewPadding(bottom: 280);
-      await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Save Password'));
+      await tester.enterText(field('Password'), 'Password1');
+      await tap(tester, find.text('Sign Up'));
+      await profile(tester);
+      await tap(tester, find.text('Edit Profile'));
+      await tap(tester, find.text('Save Changes'));
       expect(tester.takeException(), isNull);
     },
   );

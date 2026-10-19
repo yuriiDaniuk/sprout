@@ -32,8 +32,8 @@ class AuthPage extends StatelessWidget {
                       constraints: const BoxConstraints(maxWidth: 480),
                       child: Column(
                         children: [
-                          SizedBox(
-                            height: heroHeight,
+                          ConstrainedBox(
+                            constraints: BoxConstraints(minHeight: heroHeight),
                             child: Padding(
                               padding: EdgeInsets.only(
                                 top: keyboardOpen

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/sprout_theme.dart';
 import '../../core/widgets/demo_message.dart';
 import '../../core/widgets/sprout_icon.dart';
-import '../session/demo_user.dart';
+import '../session/app_user.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({
@@ -13,7 +13,7 @@ class HomeScreen extends StatelessWidget {
     required this.onToggleWatering,
   });
 
-  final DemoUser user;
+  final AppUser user;
   final bool watered;
   final VoidCallback onToggleWatering;
 

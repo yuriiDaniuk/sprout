@@ -9,11 +9,13 @@ class PageHeader extends StatelessWidget {
     required this.title,
     required this.onBack,
     this.backLabel = 'Back',
+    this.backEnabled = true,
   });
 
   final String title;
   final VoidCallback onBack;
   final String backLabel;
+  final bool backEnabled;
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -22,7 +24,7 @@ class PageHeader extends StatelessWidget {
       children: [
         IconButton(
           tooltip: backLabel,
-          onPressed: onBack,
+          onPressed: backEnabled ? onBack : null,
           icon: const SproutIcon('chevron-left'),
           constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
         ),

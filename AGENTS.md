@@ -16,6 +16,8 @@ When writing complex features or significant refactors, use an ExecPlan (as desc
 - iOS tooling: Xcode and the iOS Simulator.
 - Design source: Figma file `tA5zaOIT7BGhdWOdU7VaTa`; access is connected.
 - Version control: Git; public repository https://github.com/yuriiDaniuk/sprout, default branch `main`.
-- Planned backend for later laboratory work: Supabase Auth, Database, and Storage. Supabase is not connected in the current project.
+- Laboratory No. 4 backend: Firebase Authentication, Analytics, and Crashlytics; project `sprout-a6523`. User approved Firebase in place of the Supabase proposal from laboratory No. 2. Plant database/storage work is deferred.
 
 For laboratory work No. 3, implement UI, navigation, and demonstration state locally without backend integration. Use Navigator/CupertinoPageRoute and StatefulWidget/setState; do not add routing or state-management packages. Follow the accepted scope and progress in LAB3_PLAN.md. Ask the user about missing design or product requirements rather than inventing them.
+
+For laboratory work No. 4, follow LAB4_PLAN.md. Use Firebase Auth through AuthRepository, Form validation, and the accepted Edit Profile design. Keep plant data local until the later laboratory stage. The user-approved eight SHAREit PNG avatars are hosted in the public repository; do not publish other new changes without authorization.

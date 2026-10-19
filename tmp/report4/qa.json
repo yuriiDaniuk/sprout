@@ -1,0 +1,16 @@
+{
+  "pages": 34,
+  "figures": 7,
+  "control_questions": 32,
+  "full_source_listings_match": true,
+  "fonts": [
+    "Times New Roman",
+    "Courier New"
+  ],
+  "all_pages_visually_reviewed": true,
+  "analyze": "No issues found",
+  "tests_passed": 30,
+  "page_bounds": "OK",
+  "docx_sha256": "8c10a38fad4d6836c1eb9b494d9cc104fda6d9d53a5bca7cec9254fdceef2117",
+  "pdf_sha256": "44e14e7132c59e97d9150e4c78b73c863f2d108b587a581489c3f40f78a147e6"
+}
