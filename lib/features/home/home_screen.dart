@@ -64,17 +64,20 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            for (var row = 0; row < 2; row++) ...[
-              if (row != 0) const SizedBox(height: 12),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(child: _PlantCard(plant: _plants[row * 2])),
-                  const SizedBox(width: 16),
-                  Expanded(child: _PlantCard(plant: _plants[row * 2 + 1])),
-                ],
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: EdgeInsets.zero,
+              itemCount: _plants.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                mainAxisExtent: 250,
               ),
-            ],
+              itemBuilder: (context, index) =>
+                  _PlantCard(plant: _plants[index]),
+            ),
           ],
         ),
       ),
